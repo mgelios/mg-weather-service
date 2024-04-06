@@ -1,18 +1,44 @@
 package router
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 )
 
-func init() {
+func RunServer() {
 	router := chi.NewRouter()
-
+	Handler(router)
+	println("Started serving requests")
 	err := http.ListenAndServe("localhost:8000", router)
 	if err != nil {
 		panic(err)
 	}
+}
+
+func Handler(router *chi.Mux) {
+	router.Route("/api/v1", func(router chi.Router) {
+		router.Get("/city/{city}", GetWeatherForCity)
+	})
+}
+
+func GetWeatherForCity(w http.ResponseWriter, r *http.Request) {
+	param := chi.URLParam(r, "city")
+	appid := ""
+	res, err := http.Get(fmt.Sprintf("http://api.openweathermap.org/geo/1.0/direct?q=%s&appid=%s", param, appid))
+	if err != nil {
+		panic(err)
+	}
+	resBody, err := io.ReadAll(res.Body)
+	if err != nil {
+		panic(err)
+	}
+	res.Body.Close()
+	println(resBody)
+	json.NewEncoder(w).Encode(string(resBody))
 }
 
 // import (

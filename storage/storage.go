@@ -17,25 +17,27 @@ type Person struct {
 	Email string
 }
 
-var mongo_client *mongo.Client
-
-func init() {
+func initMongoClient() *mongo.Client {
 	clientOption := options.Client().ApplyURI("mongodb://localhost:19000")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
 	defer cancel()
 
-	mongo_client, err := mongo.Connect(ctx, clientOption)
+	client, err := mongo.Connect(ctx, clientOption)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer func() {
-		if err = mongo_client.Disconnect(ctx); err != nil {
+		if err = client.Disconnect(ctx); err != nil {
 			panic(err)
 		}
 	}()
+
+	return client
 }
+
+var mongo_client *mongo.Client = initMongoClient()
 
 func putRecord() {
 	collection := mongo_client.Database("test").Collection("people")
@@ -50,11 +52,11 @@ func putRecord() {
 
 }
 
-func getRecrod() {
+func getRecrod() Person {
 	collection := mongo_client.Database("test").Collection("people")
 	result := Person{}
 	filter := bson.D{{"name", "John"}}
 	err := collection.FindOne(context.Background(), filter).Decode(&result)
 	fmt.Printf("Error: %v \r\n", err)
-	fmt.Printf("Value: %v \r\n", result)
+	return result
 }
