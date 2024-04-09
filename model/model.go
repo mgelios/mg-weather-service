@@ -1,5 +1,7 @@
 package model
 
+import "time"
+
 type GeoCoding struct {
 	Name       string            `json:"name"`
 	Lat        float64           `json:"lat"`
@@ -7,6 +9,8 @@ type GeoCoding struct {
 	Country    string            `json:"country"`
 	LocalNames map[string]string `json:"local_names"`
 	State      string            `json:"state"`
+	Created    time.Time         `json:"created"`
+	QueredCity string            `json:"quered_city"`
 }
 
 type OneCallWeather struct {
@@ -16,6 +20,7 @@ type OneCallWeather struct {
 	TimezoneOffset int32          `json:"timezone_offset"`
 	CurrentWeather CurrentWeather `json:"current,omitempty"`
 	Daily          []DailyWeather `json:"daily,omitempty"`
+	Created        time.Time      `json:"created"`
 }
 
 type CurrentWeather struct {
