@@ -3,6 +3,7 @@ package model
 import "time"
 
 type GeoCoding struct {
+	Id         string            `json:"id,omitempty" bson:"_id,omitempty"`
 	Name       string            `json:"name"`
 	Lat        float64           `json:"lat"`
 	Lon        float64           `json:"lon"`
@@ -14,6 +15,8 @@ type GeoCoding struct {
 }
 
 type OneCallWeather struct {
+	Id             string         `json:"id,omitempty" bson:"_id,omitempty"`
+	City           string         `json:"city,omitempty" bson:"city,omitempty"`
 	Lat            float64        `json:"lat"`
 	Lon            float64        `json:"lon"`
 	Timezone       string         `json:"timezone"`

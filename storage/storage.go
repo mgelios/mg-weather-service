@@ -2,7 +2,6 @@ package storage
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"mg-weather-service/model"
 	"time"
@@ -20,30 +19,61 @@ func initMongoClient() *mongo.Client {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func() {
-		if err = client.Disconnect(ctx); err != nil {
-			panic(err)
-		}
-	}()
 	return client
 }
 
+// func disconnectMongoClient() {
+// 	if err = mongo_client.Disconnect(ctx); err != nil {
+// 		panic(err)
+// 	}
+// }
+
 var mongo_client *mongo.Client = initMongoClient()
 
-func PutGeoCodingRecord(record model.GeoCoding) {
+func UpdateGeoCodingRecord(id string, record model.GeoCoding) {
 	collection := mongo_client.Database("openweather").Collection("geocoding")
-	res, err := collection.InsertOne(context.Background(), record)
+	_, err := collection.UpdateByID(context.Background(), id, record)
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Printf("Inserted document: %v \r\n", res)
 }
 
-func GetGeoCodingRecordByCity(city string) model.GeoCoding {
+func PutGeoCodingRecord(record model.GeoCoding) {
+	collection := mongo_client.Database("openweather").Collection("geocoding")
+	_, err := collection.InsertOne(context.Background(), record)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func GetGeoCodingRecordByCity(city string) (model.GeoCoding, error) {
 	collection := mongo_client.Database("openweather").Collection("geocoding")
 	result := model.GeoCoding{}
-	filter := bson.D{{"quered_city", city}}
+	filter := bson.D{{"queredcity", city}}
 	err := collection.FindOne(context.Background(), filter).Decode(&result)
-	fmt.Printf("Error: %v \r\n", err)
-	return result
+	return result, err
+}
+
+func UpdateOneCallRecord(id string, record model.OneCallWeather) {
+	collection := mongo_client.Database("openweather").Collection("onecall")
+	_, err := collection.UpdateByID(context.Background(), id, record)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func PutOneCallRecord(record model.OneCallWeather) {
+	collection := mongo_client.Database("openweather").Collection("onecall")
+	_, err := collection.InsertOne(context.Background(), record)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func GetOneCallRecordByCity(city string) (model.OneCallWeather, error) {
+	collection := mongo_client.Database("openweather").Collection("onecall")
+	result := model.OneCallWeather{}
+	filter := bson.D{{"city", city}}
+	err := collection.FindOne(context.Background(), filter).Decode(&result)
+	return result, err
 }

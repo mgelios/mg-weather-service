@@ -6,21 +6,37 @@ import (
 	"mg-weather-service/model"
 	"mg-weather-service/storage"
 	"net/http"
-	"reflect"
 	"time"
+
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func GetWeather(city string) model.OneCallWeather {
-	geoResp := GetGeocodingResponse(city)
+	geoCoding := GetGeoCoding(city)
+	oneCall := GetOneCall(geoCoding)
+	return oneCall
+}
 
-	oneCallResp := GetOneCallResponse(geoResp.Lat, geoResp.Lon)
-
+func GetOneCall(geoCoding model.GeoCoding) model.OneCallWeather {
+	oneCallResp, err := storage.GetOneCallRecordByCity(geoCoding.Name)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			oneCallResp = GetOneCallResponse(geoCoding)
+			storage.PutOneCallRecord(oneCallResp)
+		}
+	} else {
+		if oneCallResp.Created.Before(time.Now().AddDate(0, 0, -1)) {
+			newOneCallResp := GetOneCallResponse(geoCoding)
+			storage.UpdateOneCallRecord(oneCallResp.Id, newOneCallResp)
+		}
+	}
 	return oneCallResp
 }
 
-func GetOneCallResponse(lat float64, lon float64) model.OneCallWeather {
+func GetOneCallResponse(geoCoding model.GeoCoding) model.OneCallWeather {
 	appid := ""
-	res, err := http.Get(fmt.Sprintf("https://api.openweathermap.org/data/3.0/onecall?lat=%f&lon=%f&exclude=hourly,minutely&appid=%s", lat, lon, appid))
+	res, err := http.Get(fmt.Sprintf("https://api.openweathermap.org/data/3.0/onecall?lat=%f&lon=%f&exclude=hourly,minutely&appid=%s",
+		geoCoding.Lat, geoCoding.Lon, appid))
 	if err != nil {
 		panic(err)
 	}
@@ -30,16 +46,24 @@ func GetOneCallResponse(lat float64, lon float64) model.OneCallWeather {
 		panic(err)
 	}
 	println("One Call resp")
-	fmt.Printf("%v \r\n", oneCallResp)
 	defer res.Body.Close()
+	oneCallResp.Created = time.Now()
+	oneCallResp.City = geoCoding.Name
 	return oneCallResp
 }
 
 func GetGeoCoding(city string) model.GeoCoding {
-	geoRespItem := storage.GetGeoCodingRecordByCity(city)
-	if reflect.ValueOf(geoRespItem).IsNil() {
-		geoRespItem = GetGeoCoding(city)
-		storage.PutGeoCodingRecord(geoRespItem)
+	geoRespItem, err := storage.GetGeoCodingRecordByCity(city)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			geoRespItem = GetGeocodingResponse(city)
+			storage.PutGeoCodingRecord(geoRespItem)
+		}
+	} else {
+		if geoRespItem.Created.Before(time.Now().AddDate(0, 0, -1)) {
+			newGeoRespItem := GetGeocodingResponse(city)
+			storage.UpdateGeoCodingRecord(geoRespItem.Id, newGeoRespItem)
+		}
 	}
 	return geoRespItem
 }
@@ -56,8 +80,6 @@ func GetGeocodingResponse(city string) model.GeoCoding {
 		panic(err)
 	}
 	println("Geo: resp")
-	fmt.Printf("%v \r\n", geoResp)
-	println(len(geoResp))
 	defer res.Body.Close()
 	geoResp[0].Created = time.Now()
 	geoResp[0].QueredCity = city
