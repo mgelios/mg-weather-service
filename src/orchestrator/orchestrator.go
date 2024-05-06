@@ -35,7 +35,7 @@ func GetOneCall(geoCoding model.GeoCoding) model.OneCallWeather {
 			storage.PutOneCallRecord(oneCallResp)
 		}
 	} else {
-		if oneCallResp.Created.Before(time.Now().AddDate(0, 0, -1)) {
+		if oneCallResp.Created.Before(time.Now().Add(time.Hour * -6)) {
 			newOneCallResp := GetOneCallResponse(geoCoding)
 			storage.UpdateOneCallRecord(oneCallResp.Id, newOneCallResp)
 		}
